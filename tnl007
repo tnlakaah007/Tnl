@@ -1,0 +1,82 @@
+<?php
+// ওয়েবসাইট থেকে HTML কপি করার ফাংশন
+function fetchHTML($url, $botToken, $chatId) {
+    // cURL সেশন শুরু
+    $ch = curl_init();
+
+    // cURL সেটআপ
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+    // HTML ফাইল ডাউনলোড করা
+    $html = curl_exec($ch);
+
+    // কোনো সমস্যা হলে এরর দেখাবে
+    if (curl_errno($ch)) {
+        echo "cURL Error: " . curl_error($ch);
+        curl_close($ch);
+        return;
+    }
+
+    // cURL সেশন বন্ধ
+    curl_close($ch);
+
+    // HTML এর শেষে টেক্সট যোগ করা
+    $html .= "\n<!-- Fetched using API by @tnlakash007 owned by @akashgamerking -->";
+
+    // একটি অস্থায়ী ফাইল তৈরি করা, যেটির নামের শেষে '.html' যুক্ত হবে
+    $tempFile = tempnam(sys_get_temp_dir(), 'tnl_akash_007') . '.html';
+    file_put_contents($tempFile, $html);
+
+    // টেলিগ্রাম বট API ব্যবহার করে ফাইল পাঠানো
+    $telegramApiUrl = "https://api.telegram.org/bot{$botToken}/sendDocument";
+    $file = new CURLFile($tempFile);
+
+    // POST ডেটা তৈরি করা
+    $postData = [
+        'chat_id' => $chatId,
+        'document' => $file,
+    ];
+
+    // cURL সেশন টেলিগ্রাম বটের API কল করার জন্য
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $telegramApiUrl);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    // পাঠানোর ফলাফল
+    $response = curl_exec($ch);
+
+    // কোনো সমস্যা হলে এরর দেখাবে
+    if (curl_errno($ch)) {
+        echo "cURL Error: " . curl_error($ch);
+    } else {
+        echo "ফাইলটি টেলিগ্রাম বটে সফলভাবে পাঠানো হয়েছে!";
+    }
+
+    // অস্থায়ী ফাইলটি মুছে ফেলুন
+    unlink($tempFile);
+
+    // cURL সেশন বন্ধ
+    curl_close($ch);
+}
+
+// গেট প্যারামিটার থেকে URL এবং Chat ID নেওয়া
+$url = isset($_GET['url']) ? $_GET['url'] : '';  // URL গেট প্যারামিটার
+$chatId = isset($_GET['chatid']) ? $_GET['chatid'] : '';  // Chat ID গেট প্যারামিটার
+
+// টেলিগ্রাম বট টোকেন
+$botToken = "7251012899:AAHPiYTw7s7ecy60fl_TUwPSptfJMkQN4P0"; // আপনার বট টোকেন এখানে দিন
+
+// URL এবং Chat ID নিশ্চিত করা
+if (empty($url) || empty($chatId)) {
+    echo "URL অথবা Chat ID প্রদান করা হয়নি!";
+    exit;
+}
+
+// ফাংশন কল
+fetchHTML($url, $botToken, $chatId);
+?>
